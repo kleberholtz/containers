@@ -1,0 +1,24 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM python:3.15-slim-bookworm@sha256:4e03260adeeebafccd084f3584e6b84823aba5651cfb53ef8a078ed441ddf9cd AS runtime
+
+FROM debian:latest@sha256:2dc419c6d7fe3dad0a2f9fd469c34cc90b0f9ba642d8fde837fe3d7d34a0e7f1
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+    && apt-get autoremove -y --purge \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates build-essential libbz2-dev libexpat1-dev libffi-dev libgdbm-dev liblzma-dev libncurses-dev libreadline-dev libsqlite3-dev libssl-dev uuid-dev zlib1g-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=runtime /usr/local/ /usr/local/
+RUN ldconfig
+ENV PATH="/usr/local/bin:${PATH}"
+
+RUN python3 -c 'import sys; assert sys.version_info[:2] == (3, 15)' \
+    && python3 -m pip --version \
+    && python3 -c 'import ssl, sqlite3, bz2, lzma, ctypes, readline, uuid; import venv'
+
+WORKDIR /app
+
+CMD ["python3", "--help"]
