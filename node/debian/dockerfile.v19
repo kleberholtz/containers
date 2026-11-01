@@ -1,0 +1,22 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM node:19-bullseye-slim@sha256:f58f1fcf5c9ff9e3752993edb4ed6dbd35697124c85a43f3b97aa054500b0534 AS runtime
+
+FROM debian:latest@sha256:2dc419c6d7fe3dad0a2f9fd469c34cc90b0f9ba642d8fde837fe3d7d34a0e7f1
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+    && apt-get autoremove -y --purge \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates libstdc++6 libatomic1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=runtime /usr/local/ /usr/local/
+
+RUN test "$(node -p 'process.versions.node.split(".")[0]')" = "19" \
+    && node --version \
+    && npm --version
+
+WORKDIR /app
+
+CMD ["node", "--help"]
