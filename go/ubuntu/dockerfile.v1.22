@@ -1,0 +1,24 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM golang:1.22@sha256:1cf6c45ba39db9fd6db16922041d074a63c935556a05c5ccb62d181034df7f02 AS runtime
+
+FROM ubuntu:latest@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+    && apt-get autoremove -y --purge \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates build-essential git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=runtime /usr/local/go/ /usr/local/go/
+ENV GOPATH=/go \
+    GOTOOLCHAIN=local \
+    PATH="/usr/local/go/bin:/go/bin:${PATH}"
+
+RUN go version | grep -E '^go version go1\.22(\.| )' \
+    && go version
+
+WORKDIR /app
+
+CMD ["go", "--help"]
