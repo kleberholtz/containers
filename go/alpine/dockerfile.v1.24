@@ -1,0 +1,21 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM golang:1.24-alpine@sha256:8bee1901f1e530bfb4a7850aa7a479d17ae3a18beb6e09064ed54cfd245b7191 AS runtime
+
+FROM alpine:latest@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+
+RUN apk update \
+    && apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates build-base git \
+    && rm -rf /var/cache/apk/*
+
+COPY --from=runtime /usr/local/go/ /usr/local/go/
+ENV GOPATH=/go \
+    GOTOOLCHAIN=local \
+    PATH="/usr/local/go/bin:/go/bin:${PATH}"
+
+RUN go version | grep -E '^go version go1\.24(\.| )' \
+    && go version
+
+WORKDIR /app
+
+CMD ["go", "--help"]
