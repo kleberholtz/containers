@@ -1,0 +1,24 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM golang:1.20@sha256:8f9af7094d0cb27cc783c697ac5ba25efdc4da35f8526db21f7aebb0b0b4f18a AS runtime
+
+FROM ubuntu:latest@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+    && apt-get autoremove -y --purge \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates build-essential git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=runtime /usr/local/go/ /usr/local/go/
+ENV GOPATH=/go \
+    GOTOOLCHAIN=local \
+    PATH="/usr/local/go/bin:/go/bin:${PATH}"
+
+RUN go version | grep -E '^go version go1\.20(\.| )' \
+    && go version
+
+WORKDIR /app
+
+CMD ["go", "--help"]
