@@ -1,0 +1,25 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM rust:1.99@sha256:09027f873d45b8ecd1dc86f1fa13b7a62b875c961f017a0e331267b350430137 AS runtime
+
+FROM debian:latest@sha256:2dc419c6d7fe3dad0a2f9fd469c34cc90b0f9ba642d8fde837fe3d7d34a0e7f1
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
+    && apt-get autoremove -y --purge \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates build-essential pkg-config libssl-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=runtime /usr/local/cargo/ /usr/local/cargo/
+COPY --from=runtime /usr/local/rustup/ /usr/local/rustup/
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    PATH="/usr/local/cargo/bin:${PATH}"
+
+RUN rustc --version | grep -E '^rustc 1\.99\.' \
+    && cargo --version
+
+WORKDIR /app
+
+CMD ["cargo", "--help"]
