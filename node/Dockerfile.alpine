@@ -1,0 +1,12 @@
+FROM alpine:latest
+
+RUN apk update \
+    && apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates nodejs npm \
+    && rm -rf /var/cache/apk/*
+
+RUN node --version && npm --version
+
+WORKDIR /app
+
+CMD ["node", "--help"]
