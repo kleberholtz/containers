@@ -1,0 +1,19 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM node:16-alpine@sha256:a1f9d027912b58a7c75be7716c97cfbc6d3099f3a97ed84aa490be9dee20e787 AS runtime
+
+FROM alpine:latest@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+
+RUN apk update \
+    && apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates libstdc++ libatomic \
+    && rm -rf /var/cache/apk/*
+
+COPY --from=runtime /usr/local/ /usr/local/
+
+RUN test "$(node -p 'process.versions.node.split(".")[0]')" = "16" \
+    && node --version \
+    && npm --version
+
+WORKDIR /app
+
+CMD ["node", "--help"]
