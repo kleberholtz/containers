@@ -1,0 +1,32 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM node:22-alpine3.20@sha256:2289fb1fba0f4633b08ec47b94a89c7e20b829fc5679f9b7b298eaa2f1ed8b7e AS node
+FROM rust:1.99-alpine@sha256:7e9e2d068a107a2adafd19930011178d14a78326053cd4c3a9f7ad3fd049557d AS rust
+
+FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+
+RUN apk update \
+    && apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates build-base libstdc++ webkit2gtk-dev curl wget file openssl-dev libayatana-appindicator-dev librsvg-dev xdotool-dev pkgconf font-dejavu \
+    && rm -rf /var/cache/apk/*
+
+COPY --from=node /usr/local/ /usr/local/
+COPY --from=rust /usr/local/cargo/ /usr/local/cargo/
+COPY --from=rust /usr/local/rustup/ /usr/local/rustup/
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    PATH="/usr/local/cargo/bin:${PATH}"
+ENV RUSTFLAGS="-C target-feature=-crt-static"
+
+RUN npm install --global '@tauri-apps/cli@1.6.3' \
+    && npm cache clean --force
+
+RUN tauri --version | grep -E '^tauri-cli 1\.' \
+    && rustc --version \
+    && cargo --version \
+    && test "$(node -p 'process.versions.node.split(".")[0]')" = "22" \
+    && npm --version \
+    && pkg-config --exists webkit2gtk-4.0 gtk+-3.0 openssl
+
+WORKDIR /app
+
+CMD ["tauri", "--help"]
