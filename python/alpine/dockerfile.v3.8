@@ -1,0 +1,20 @@
+# Source images are pinned by digest to preserve the selected versions.
+FROM python:3.8-alpine@sha256:3d93b1f77efce339aa77db726656872517b0d67837989aa7c4b35bd5ae7e81ba AS runtime
+
+FROM alpine:latest@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+
+RUN apk update \
+    && apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates build-base bzip2-dev expat-dev libffi-dev gdbm-dev xz-dev ncurses-dev readline-dev sqlite-dev openssl-dev zlib-dev util-linux-dev \
+    && rm -rf /var/cache/apk/*
+
+COPY --from=runtime /usr/local/ /usr/local/
+ENV PATH="/usr/local/bin:${PATH}"
+
+RUN python3 -c 'import sys; assert sys.version_info[:2] == (3, 8)' \
+    && python3 -m pip --version \
+    && python3 -c 'import ssl, sqlite3, bz2, lzma, ctypes, readline, uuid; import venv'
+
+WORKDIR /app
+
+CMD ["python3", "--help"]
