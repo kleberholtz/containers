@@ -1,0 +1,12 @@
+FROM alpine:latest
+
+RUN apk update \
+    && apk upgrade --no-cache \
+    && apk add --no-cache ca-certificates rust cargo build-base \
+    && rm -rf /var/cache/apk/*
+
+RUN rustc --version && cargo --version
+
+WORKDIR /app
+
+CMD ["cargo", "--help"]
